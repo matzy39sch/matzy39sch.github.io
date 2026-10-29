@@ -1,196 +1,1095 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>M@t</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M@t // Retro Terminal Portfolio</title>
+    <meta name="description" content="Personal portfolio and interactive retro terminal of Mátyás Szabó - Backend Elixir Developer & Adaptor.">
     <style>
-        @display-height: 70vh;
-        @blink-time: 500ms;
-        @keyframes blink {
-            0%,
-            49% {
-                border-right-color: transparent
-            }
-            50%,
-            100% {
-                border-right-color: currentColor
-            }
+        :root {
+            --crt-bg: #070d08;
+            --crt-glow: #38ef38;
+            --crt-color: #4afa4a;
+            --crt-dim: #258a25;
+            --crt-accent: #9fff9f;
+            --crt-border: #142416;
+            --crt-scanline: rgba(0, 0, 0, 0.10);
+            --bezel-bg: #1c1f23;
+            --bezel-border: #2c3238;
+            --font-stack: "Cascadia Code", "Fira Code", Consolas, Menlo, Monaco, "Courier New", monospace;
         }
-        
-        @keyframes scan {
-            0% {
-                background-position: 0 -100vh;
-            }
-            35%,
-            100% {
-                background-position: 0 100vh;
-            }
+
+        [data-theme="amber"] {
+            --crt-bg: #0f0902;
+            --crt-glow: #ffad1f;
+            --crt-color: #ffba2a;
+            --crt-dim: #8c5208;
+            --crt-accent: #ffe18c;
+            --crt-border: #2b1c09;
+            --crt-scanline: rgba(0, 0, 0, 0.10);
         }
-        
-        html {
-            /* background-color: black; */
-            padding: 1em;
+
+        [data-theme="cyan"] {
+            --crt-bg: #030e13;
+            --crt-glow: #00d5f7;
+            --crt-color: #35e4ff;
+            --crt-dim: #0b6878;
+            --crt-accent: #9df2ff;
+            --crt-border: #09242d;
+            --crt-scanline: rgba(0, 0, 0, 0.10);
         }
-        
-        output {
-            border-radius: 1em;
-            background-color: #131;
-            background-image: radial-gradient(ellipse 500% 100% at 50% 90%, transparent, #121);
-            //background-size: 500% 100%;
-            background-position: center;
-            display: block;
-            height: @display-height;
-            padding: 2em;
-            box-shadow: inset 0 0 10em 1em rgba(0, 0, 0, 0.5);
-            overflow: auto;
-            font-family: monospace;
-            color: rgba(128, 255, 128, 0.8);
+
+        [data-theme="white"] {
+            --crt-bg: #0e1013;
+            --crt-glow: #f0f6fc;
+            --crt-color: #f0f6fc;
+            --crt-dim: #6e7681;
+            --crt-accent: #ffffff;
+            --crt-border: #22262c;
+            --crt-scanline: rgba(0, 0, 0, 0.10);
+        }
+
+        /* High Readability / Clean Mode */
+        [data-scanlines="off"] .screen-casing::before {
+            display: none !important;
+        }
+        [data-scanlines="off"] .scan-beam {
+            display: none !important;
+        }
+        [data-scanlines="off"] .terminal-text,
+        [data-scanlines="off"] .line,
+        [data-scanlines="off"] pre.ascii-box,
+        [data-scanlines="off"] .cli-input {
+            text-shadow: none !important;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0b0d10;
+            background-image: 
+                radial-gradient(circle at 50% 15%, #181c22 0%, #0b0d10 80%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0, rgba(255,255,255,0.01) 1px, transparent 0, transparent 20px);
+            color: var(--crt-color);
+            font-family: var(--font-stack);
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.25rem 1rem;
+            overflow-x: hidden;
+        }
+
+        /* Outer Monitor Bezel */
+        .monitor-bezel {
+            width: 100%;
+            max-width: 980px;
+            background: linear-gradient(145deg, #282d33 0%, #16181b 100%);
+            border-radius: 20px;
+            padding: 1.35rem;
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.85),
+                inset 0 2px 4px rgba(255, 255, 255, 0.15),
+                inset 0 -3px 8px rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--bezel-border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
             position: relative;
-            .layer() {
-                position: absolute;
-                content: "";
-                display: block;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                pointer-events: none;
+        }
+
+        /* Top Bezel Header */
+        .bezel-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.5rem;
+            font-size: 0.78rem;
+            color: #8b949e;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .brand-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: #c9d1d9;
+        }
+
+        .brand-badge .led {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--crt-color);
+            box-shadow: 0 0 8px var(--crt-glow);
+            animation: pulse-led 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-led {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        .bezel-model {
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            color: #6e7681;
+        }
+
+        /* CRT Screen Glass Container */
+        .screen-casing {
+            position: relative;
+            background-color: var(--crt-bg);
+            border-radius: 14px;
+            border: 2px solid var(--crt-border);
+            box-shadow: 
+                inset 0 0 60px rgba(0, 0, 0, 0.75),
+                0 0 12px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 540px;
+            max-height: 76vh;
+        }
+
+        /* Subtle, Non-Intrusive Scanlines */
+        .screen-casing::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                rgba(0, 0, 0, 0) 50%, 
+                var(--crt-scanline) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Soft Curved Ambient Reflection */
+        .screen-casing::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse 120% 50% at 50% 0%, rgba(255, 255, 255, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 90% 90% at 50% 50%, transparent 70%, rgba(0, 0, 0, 0.45) 100%);
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        /* Very faint traveling scan beam */
+        .scan-beam {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 10px;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            animation: scanbeam 9s linear infinite;
+            pointer-events: none;
+            z-index: 12;
+        }
+
+        @keyframes scanbeam {
+            0% { transform: translateY(-20px); }
+            100% { transform: translateY(76vh); }
+        }
+
+        /* CRT Screen Inner Workspace */
+        .crt-workspace {
+            padding: 1.5rem 1.65rem;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            z-index: 5;
+            scrollbar-width: thin;
+            scrollbar-color: var(--crt-dim) transparent;
+        }
+
+        .crt-workspace::-webkit-scrollbar {
+            width: 7px;
+        }
+        .crt-workspace::-webkit-scrollbar-thumb {
+            background-color: var(--crt-dim);
+            border-radius: 4px;
+        }
+
+        /* Terminal Logo Header */
+        .logo-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.4rem 0;
+            color: var(--crt-color);
+            filter: drop-shadow(0 0 5px var(--crt-glow));
+            user-select: none;
+        }
+
+        .logo-header svg {
+            width: 135px;
+            height: auto;
+            transition: transform 0.25s ease;
+        }
+
+        .logo-header svg:hover {
+            transform: scale(1.04);
+        }
+
+        /* Crisp, High-Readability Text Styling */
+        .terminal-text {
+            color: var(--crt-color);
+            font-size: 0.98rem;
+            line-height: 1.65;
+            text-shadow: 0 0 1.5px var(--crt-glow);
+            word-break: break-word;
+        }
+
+        .terminal-text a {
+            color: var(--crt-accent);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-shadow: 0 0 3px var(--crt-glow);
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .terminal-text a:hover {
+            opacity: 0.85;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .terminal-output {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Proper Block-Level Line Formatting (Fixes inline flex-wrap bugs) */
+        .line {
+            position: relative;
+            padding-left: 1.5rem;
+            line-height: 1.65;
+            font-size: 0.98rem;
+            text-shadow: 0 0 1.5px var(--crt-glow);
+            word-break: break-word;
+        }
+
+        .line::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--crt-dim);
+            font-weight: bold;
+        }
+
+        .line.sys::before {
+            content: "#";
+            color: var(--crt-accent);
+            font-weight: bold;
+        }
+
+        .line.user-entry {
+            color: var(--crt-accent);
+            font-weight: 600;
+        }
+
+        .line.user-entry::before {
+            content: "$";
+            color: var(--crt-glow);
+            font-weight: bold;
+        }
+
+        .line.raw {
+            padding-left: 0;
+        }
+
+        .line.raw::before {
+            display: none;
+        }
+
+        .line em {
+            font-style: italic;
+            color: var(--crt-accent);
+            font-weight: bold;
+        }
+
+        .line strong {
+            font-weight: 700;
+            color: var(--crt-accent);
+        }
+
+        .highlight {
+            color: var(--crt-accent);
+            font-weight: bold;
+        }
+
+        .dim {
+            color: var(--crt-dim);
+        }
+
+        /* Blinking Cursor */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.15em;
+            background-color: var(--crt-color);
+            box-shadow: 0 0 5px var(--crt-glow);
+            vertical-align: sub;
+            animation: blink 0.85s infinite step-end;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Interactive Command Input Line */
+        .cli-row {
+            display: none;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.4rem;
+            position: relative;
+        }
+
+        .cli-row.active {
+            display: flex;
+        }
+
+        .cli-prompt {
+            color: var(--crt-glow);
+            font-weight: bold;
+            flex-shrink: 0;
+            font-size: 0.98rem;
+            text-shadow: 0 0 4px var(--crt-glow);
+        }
+
+        .cli-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--crt-color);
+            font-family: var(--font-stack);
+            font-size: 0.98rem;
+            font-weight: 600;
+            text-shadow: 0 0 1.5px var(--crt-glow);
+            caret-color: var(--crt-color);
+        }
+
+        /* Bottom Bezel Controls */
+        .bezel-bottom {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            padding-top: 0.2rem;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Retro Tactile Push Buttons */
+        .retro-btn {
+            background: linear-gradient(180deg, #2b3138 0%, #1a1d21 100%);
+            color: #d1d5db;
+            border: 1px solid #3e4650;
+            border-bottom: 3px solid #111417;
+            border-radius: 6px;
+            padding: 0.45rem 0.8rem;
+            font-family: var(--font-stack);
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.12s ease;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .retro-btn:hover {
+            background: linear-gradient(180deg, #363e47 0%, #22262b 100%);
+            color: #ffffff;
+            border-color: #515d6b;
+        }
+
+        .retro-btn:active {
+            transform: translateY(2px);
+            border-bottom-width: 1px;
+            box-shadow: none;
+        }
+
+        .retro-btn.active {
+            color: var(--crt-color);
+            border-color: var(--crt-dim);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+        }
+
+        .theme-pill {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .pill-green { background: #4afa4a; box-shadow: 0 0 4px #4afa4a; }
+        .pill-amber { background: #ffba2a; box-shadow: 0 0 4px #ffba2a; }
+        .pill-cyan  { background: #35e4ff; box-shadow: 0 0 4px #35e4ff; }
+        .pill-white { background: #f0f6fc; box-shadow: 0 0 4px #f0f6fc; }
+
+        /* ASCII Art Table */
+        pre.ascii-box {
+            font-family: var(--font-stack);
+            font-size: 0.88rem;
+            line-height: 1.45;
+            color: var(--crt-color);
+            text-shadow: 0 0 1.5px var(--crt-glow);
+            overflow-x: auto;
+            white-space: pre;
+            margin: 0.35rem 0;
+        }
+
+        /* Screen Turn-on Animation */
+        .crt-turn-on {
+            animation: crt-power-on 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes crt-power-on {
+            0% {
+                transform: scaleY(0.005) scaleX(0);
+                filter: brightness(20);
             }
-            // Scan
-            &::before {
-                .layer();
-                background-image: linear-gradient(0deg, transparent 0%, rgba(32, 128, 32, 0.2) 2%, rgba(32, 128, 32, 0.8) 3%, rgba(32, 128, 32, 0.2) 3%, transparent 100%);
-                background-repeat: no-repeat;
-                animation: scan 7.5s linear 0s infinite;
+            40% {
+                transform: scaleY(0.005) scaleX(1);
+                filter: brightness(12);
             }
-            &::after {
-                .layer();
-                background-image: // Glare
-                radial-gradient(ellipse 50% 15% at 50% 15%, rgba(255, 255, 255, 0.05), transparent), radial-gradient(ellipse 50% 10% at 50% 12%, rgba(255, 255, 255, 0.1), transparent), radial-gradient(ellipse 50% 5% at 50% 10%, rgba(255, 255, 255, 0.1), transparent), radial-gradient(ellipse 50% 3% at 50% 9%, rgba(255, 255, 255, 0.1), transparent), // Shadow
-                radial-gradient(ellipse 200% 20% at 50% 0%, rgba(0, 0, 0, 0.5), transparent), // Scanlines
-                linear-gradient(0deg, rgba(0, 0, 0, 0.2) 50%, transparent 50%);
-                background-size: 100%, 100%, 100%, 100%, 100%, 100% 0.25ch;
-            }
-            q {
-                border-right: 0 solid currentColor;
-                animation: blink @blink-time linear 0s infinite;
-                text-shadow: 0 0 1ex #3f3, 0 0 2px rgba(255, 255, 255, 0.8);
-                margin-bottom: 1em;
-                line-height: 150%;
-                &::before {
-                    content: "> ";
-                }
-                &:last-child {
-                    border-right-width: 1ch;
-                }
+            100% {
+                transform: scaleY(1) scaleX(1);
+                filter: brightness(1);
             }
         }
-        
-        .break {
-            flex-basis: 100%;
-            height: 0;
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0.5rem;
+            }
+            .monitor-bezel {
+                padding: 0.85rem;
+                border-radius: 14px;
+            }
+            .screen-casing {
+                min-height: 480px;
+                max-height: 72vh;
+            }
+            .crt-workspace {
+                padding: 1rem 0.85rem;
+            }
+            .line {
+                font-size: 0.92rem;
+                padding-left: 1.25rem;
+            }
+            .bezel-bottom {
+                justify-content: center;
+            }
         }
     </style>
+</head>
+<body data-theme="green" data-scanlines="on">
+
+    <div class="monitor-bezel">
+        <!-- Bezel Top Bar -->
+        <div class="bezel-top">
+            <div class="brand-badge">
+                <span class="led"></span>
+                <span>M@T PHOSPHOR-CRT</span>
+            </div>
+            <div class="bezel-model">MODEL: MS-2026 // ADAPTOR-SYS</div>
+        </div>
+
+        <!-- CRT Glass Screen Frame -->
+        <div class="screen-casing crt-turn-on" id="screenCasing">
+            <div class="scan-beam"></div>
+
+            <div class="crt-workspace" id="workspace" onclick="focusCLI()">
+                <!-- Monogram SVG Logo -->
+                <div class="logo-header">
+                    <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="145" height="82" viewBox="0 0 300 169" preserveAspectRatio="xMidYMid meet">
+                        <g transform="translate(0.000000,169.000000) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
+                            <path d="M1458 1570 c-169 -31 -292 -94 -409 -210 -146 -144 -208 -286 -216
+                            -495 -4 -100 -2 -135 16 -210 64 -265 253 -461 518 -537 101 -29 294 -32 393
+                            -5 66 17 227 92 268 124 l22 18 -45 68 -46 67 -37 -29 c-44 -36 -147 -83 -217
+                            -100 -69 -17 -218 -15 -289 4 -140 37 -287 147 -353 265 -103 181 -107 386
+                            -13 576 71 145 218 260 381 299 75 17 216 20 291 4 152 -31 307 -151 370 -286
+                            28 -59 33 -81 36 -169 5 -129 -12 -193 -69 -258 -46 -52 -77 -71 -132 -81
+                            l-37 -7 0 169 c0 94 -3 218 -7 276 l-6 107 -92 0 -92 0 -66 -157 -66 -158 -28
+                            65 c-16 36 -47 107 -69 158 l-39 92 -95 -2 c-83 -3 -95 -5 -94 -20 0 -10 1
+                            -139 2 -288 l2 -270 70 0 70 0 2 206 3 205 65 -151 65 -151 48 3 49 3 61 149
+                            c54 131 63 146 68 120 4 -16 7 -136 8 -266 l1 -238 65 0 c182 0 355 93 424
+                            228 52 103 65 264 31 396 -29 116 -73 189 -170 287 -136 137 -276 195 -490
+                            204 -58 2 -126 0 -152 -5z"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Dynamic Output Stream -->
+                <div class="terminal-output" id="output"></div>
+
+                <!-- Interactive Command Line -->
+                <div class="cli-row" id="cliRow">
+                    <span class="cli-prompt">guest@matzy-os:~$</span>
+                    <input type="text" id="cliInput" class="cli-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Bezel Hardware Controls Bar -->
+        <div class="bezel-bottom">
+            <div class="control-group">
+                <button class="retro-btn" onclick="rebootSystem()" title="Restart boot sequence">
+                    <span>⟳</span> REBOOT
+                </button>
+                <button class="retro-btn" id="skipBtn" onclick="skipBootSequence()" title="Skip typing animation">
+                    <span>⏩</span> SKIP
+                </button>
+                <button class="retro-btn" id="scanlineBtn" onclick="toggleScanlines()" title="Toggle CRT scanlines on/off for maximum sharpness">
+                    <span>📺</span> SCANLINES: <span id="scanlineLabel">MILD</span>
+                </button>
+                <button class="retro-btn" id="soundBtn" onclick="toggleSound()" title="Toggle keyboard/terminal sounds">
+                    <span id="soundIcon">🔈</span> AUDIO: <span id="soundLabel">OFF</span>
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="retro-btn active" onclick="setTheme('green')"><span class="theme-pill pill-green"></span> P1 GREEN</button>
+                <button class="retro-btn" onclick="setTheme('amber')"><span class="theme-pill pill-amber"></span> P3 AMBER</button>
+                <button class="retro-btn" onclick="setTheme('cyan')"><span class="theme-pill pill-cyan"></span> CYAN</button>
+                <button class="retro-btn" onclick="setTheme('white')"><span class="theme-pill pill-white"></span> MONO</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function myFunction() {
-            var bind = Function.prototype.bind,
-                $append = bind.call(Element.prototype.appendChild, document.querySelector("output")),
-                $new = bind.call(Document.prototype.createElement, document),
-                $text = bind.call(Document.prototype.createTextNode, document),
-                $rnd = function() {
-                    return (Math.random() * 125 + 0) | 0;
-                },
-                $promise = function(thenFn) {
-                    var args, promise, wait, slice = Array.prototype.slice,
-                        isResolved = false;
-                    var promise = {
-                        wait: function(ms) {
-                            wait = ms;
-                            return promise;
-                        },
-                        then: function() {
-                            args = slice.call(arguments);
-                            return promise = $promise(thenFn);
-                        },
-                        resolve: function() {
-                            isResolved = true;
-                            if (args) {
-                                var next = Function.prototype.bind.apply(thenFn, [undefined].concat(args).concat([promise]));
-                                wait ? setTimeout(next, wait) : next();
-                            }
-
-                        }
-                    };
-                    return promise;
-                };
-
-            var process = function(target, chars, promise) {
-                var first = chars[0],
-                    rest = chars.slice(1);
-                if (!first) {
-                    promise.resolve();
-                    return;
+        /* ----------------------------------------------------
+           Sound Synthesizer (Web Audio API - zero dependencies)
+        ---------------------------------------------------- */
+        const SoundEngine = {
+            enabled: false,
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
                 }
-                target.appendChild(first);
-                setTimeout(process.bind(undefined, target, rest, promise), $rnd());
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            keyClick() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320 + Math.random() * 260, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.035);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.035);
+                } catch (e) {}
+            },
+            beep(freq = 750, duration = 0.06, type = 'square') {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            },
+            degauss() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.4);
+                    gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.4);
+                } catch (e) {}
+            }
+        };
+
+        function toggleSound() {
+            SoundEngine.init();
+            SoundEngine.enabled = !SoundEngine.enabled;
+            const label = document.getElementById('soundLabel');
+            const icon = document.getElementById('soundIcon');
+            const btn = document.getElementById('soundBtn');
+
+            if (SoundEngine.enabled) {
+                label.textContent = "ON";
+                icon.textContent = "🔊";
+                btn.classList.add('active');
+                SoundEngine.beep(880, 0.1);
+            } else {
+                label.textContent = "OFF";
+                icon.textContent = "🔈";
+                btn.classList.remove('active');
+            }
+        }
+
+        /* ----------------------------------------------------
+           Scanlines Sharpness Toggle
+        ---------------------------------------------------- */
+        function toggleScanlines() {
+            const current = document.body.getAttribute('data-scanlines');
+            const next = current === 'off' ? 'on' : 'off';
+            document.body.setAttribute('data-scanlines', next);
+            
+            const label = document.getElementById('scanlineLabel');
+            const btn = document.getElementById('scanlineBtn');
+            if (next === 'on') {
+                label.textContent = "MILD";
+                btn.classList.remove('active');
+            } else {
+                label.textContent = "OFF (CRISP)";
+                btn.classList.add('active');
+            }
+            SoundEngine.beep(650, 0.04);
+        }
+
+        /* ----------------------------------------------------
+           Theme Controller
+        ---------------------------------------------------- */
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            document.querySelectorAll('.control-group .retro-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(theme)) {
+                    btn.classList.add('active');
+                } else if (btn.innerHTML.includes('theme-pill')) {
+                    btn.classList.remove('active');
+                }
+            });
+            SoundEngine.beep(600, 0.04);
+        }
+
+        /* ----------------------------------------------------
+           Bio & Sequence Definition
+        ---------------------------------------------------- */
+        const INTRO_LINES = [
+            { text: "SYSTEM BOOT: M@T-OS v2.6 [BEAM Architecture / Real-Time Core]", type: "sys", pause: 400 },
+            { text: "Welcome friend,", type: "line", pause: 500 },
+            { text: "This is my personal introduction terminal, transmitting from the cloud... Here's the broadcast:", type: "line", pause: 600 },
+            { text: "THE ORIGIN: My coding journey started in high school when I built a Poker game in Pascal with an AI that cheekily mirrored the player's every action.", type: "line", pause: 700 },
+            { text: "THE HOOK: I realized software development had the ultimate thrill—uniting the beauty (UI craftsmanship) and the beast (powerful distributed backend systems).", type: "line", pause: 750 },
+            { text: "THE CRAFT: Today, I have ~10 years of experience in software engineering, currently specialized as a backend Elixir developer designing stateful APIs and distributed systems for cloud contact center suites.", type: "line", pause: 800 },
+            { text: "THE MINDSET: I identify as an 'Adaptor'. Through fast-moving clients, teams, and tech stacks, I adapt rapidly and turn challenges into masterclasses.", type: "line", pause: 750 },
+            { text: "THE TEAM: That adaptability creates effortless camaraderie with teammates and clients across Europe, Asia, and Australia, bridging timezones and cultures.", type: "line", pause: 750 },
+            { text: "THINGS I LIKE:", type: "line", pause: 400 },
+            { text: "  • Tinkering: Proud owner of a Raspberry Pi 3B running OctoPrint for an Ender 3 3D printer.", type: "line", pause: 450 },
+            { text: "  • Football: Loyal Arsenal FC gunner since Arsène Wenger (nowadays dominating on Xbox).", type: "line", pause: 450 },
+            { text: "  • Cinema & TV: Always up to date with modern cinema, while deeply appreciating Charlie Chaplin's classics.", type: "line", pause: 450 },
+            { text: "  • Humor: Puns, witty banter, and unapologetic dad jokes.", type: "line", pause: 550 },
+            { text: "TRANSMISSION COMPLETE. Terminal ready for input.", type: "sys", pause: 250 },
+            { text: "Type 'help' below to inspect skills, projects, contact info, or ask for a joke.", type: "highlight", pause: 200 }
+        ];
+
+        /* ----------------------------------------------------
+           Interactive CLI Commands & Data
+        ---------------------------------------------------- */
+        const COMMANDS = {
+            help: () => `
+<pre class="ascii-box">
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                            AVAILABLE COMMANDS                             ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║  about      - Display the full developer biography                        ║
+║  skills     - Detailed breakdown of tech stack & tooling                  ║
+║  projects   - Featured projects & GitHub highlights                       ║
+║  contact    - Communication frequencies (Email, GitHub, LinkedIn)         ║
+║  neofetch   - Render system diagnostic specs & summary                    ║
+║  joke       - Print a random developer / dad joke                         ║
+║  theme      - Switch theme: theme [green|amber|cyan|white]                ║
+║  scanlines  - Toggle scanline effect: scanlines [on|off]                  ║
+║  sound      - Toggle sound effects: sound [on|off]                        ║
+║  clear      - Clear the terminal screen                                   ║
+║  reboot     - Re-run CRT power cycle & boot sequence                      ║
+║  sudo       - Execute privileged command                                  ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+</pre>`,
+
+            about: () => `
+<div class="line"><strong>Mátyás Szabó</strong> // Backend Elixir & Distributed Systems Engineer</div>
+<div class="line">Known as an <em>Adaptor</em>: bringing deep analytical troubleshooting, cross-cultural empathy, and full-stack curiosity to high-scale cloud platforms.</div>
+<div class="line">Started with Pascal poker AI in high school, refined through 10+ years building stateful cloud APIs, Elixir/OTP concurrency, and hardware tinkering.</div>`,
+
+            skills: () => `
+<pre class="ascii-box">
+┌── [ BACKEND & DISTRIBUTED SYSTEMS ]
+│   • Elixir, Erlang/OTP, BEAM Ecosystem
+│   • Stateful APIs, WebSockets, Concurrency & Supervision Trees
+│   • PostgreSQL, Redis, Cloud Telephony / WebRTC Integration
+│
+├── [ ARCHITECTURE & PRACTICES ]
+│   • Resilient Fault-Tolerant Architectures
+│   • API Design (REST, GraphQL), Microservices & Distributed Nodes
+│   • Docker, CI/CD, Automated Testing & Observability
+│
+└── [ HARDWARE & CREATIVE TINKERING ]
+    • Raspberry Pi 3B, OctoPrint remote print servers
+    • Ender 3 3D Printer tuning & mechanical repairs
+    • Frontend UI (HTML5, Modern CSS, Vanilla JS, Phoenix LiveView)
+</pre>`,
+
+            projects: () => `
+<div class="line raw">
+<pre class="ascii-box">
+[1] matzy39sch.github.io
+    Retro Phosphor CRT Interactive Terminal Portfolio (Pure Vanilla HTML/CSS/JS)
+    Repo: <a href="https://github.com/matzy39sch/matzy39sch.github.io" target="_blank">github.com/matzy39sch/matzy39sch.github.io</a>
+
+[2] Distributed Cloud Contact Center APIs
+    High-availability, stateful telephony & agent orchestration built in Elixir/OTP.
+
+[3] OctoPrint 3D Print Station
+    Configured Raspberry Pi headless server driving an Ender 3 for automated remote manufacturing.
+
+[4] Pascal Echo-AI Poker (High School Classic)
+    The humble beginning of a 10-year coding odyssey.
+
+[GitHub Profile]
+    Explore more repositories at: <a href="https://github.com/matzy39sch" target="_blank">github.com/matzy39sch</a>
+</pre>
+</div>`,
+
+            contact: () => `
+<div class="line raw">
+<pre class="ascii-box">
+┌── [ CONTACT CHANNELS ]
+│ • Email    : <a href="mailto:szabo_matyas@outlook.com">szabo_matyas@outlook.com</a>
+│ • GitHub   : <a href="https://github.com/matzy39sch" target="_blank">https://github.com/matzy39sch</a>
+│ • LinkedIn : <a href="https://linkedin.com/in/" target="_blank">Coming soon / in progress</a>
+│ • Status   : Open to impactful backend engineering discussions & global collaboration
+└──────────────────────────────────────────────────────────
+</pre>
+</div>`,
+
+            neofetch: () => `
+<pre class="ascii-box">
+       .---.            guest@matzy-workstation
+      /     \\           -----------------------
+     | () () |          OS       : MatzyOS 2.6 (x86_64)
+      \\  -  /           Host     : Developer Brain v10.0
+     .-'\`"'-.           Kernel   : BEAM / Erlang 26+ (SMP)
+    / /     \\ \\         Uptime   : ~10 Years in Production
+   | |       | |        Shell    : matzy-sh v2.6
+   | |       | |        Terminal : CRT Phosphor-80x25 (High-Contrast)
+    \\ \\     / /         Stack    : Elixir, OTP, Cloud APIs, Linux
+     \`'---'\`            Club     : Arsenal FC (Gooner)
+                        IoT      : OctoPi + Ender 3 3D Printer
+</pre>`,
+
+            joke: () => {
+                const jokes = [
+                    "Why do programmers prefer dark mode? Because light attracts bugs.",
+                    "An Elixir process walks into a bar. The bartender asks: 'Supervisor around, or can you handle your state?'",
+                    "There are 10 types of people in the world: those who understand binary, and those who don't.",
+                    "Why did the developer stay at Arsenal? Because they always try to walk it into the net!",
+                    "What's an algorithm? Word used by programmers when they don't want to explain what they did.",
+                    "Why do Java programmers wear glasses? Because they don't C#.",
+                    "A SQL query walks up to two tables in a restaurant and asks: 'Mind if I JOIN you?'"
+                ];
+                const selected = jokes[Math.floor(Math.random() * jokes.length)];
+                return `<div class="line highlight">"${selected}"</div>`;
+            },
+
+            sudo: () => `<div class="line highlight">guest is not in the sudoers file. This incident will be reported to Arsène Wenger.</div>`
+        };
+
+        /* ----------------------------------------------------
+           Typing Engine & State Management
+        ---------------------------------------------------- */
+        let activeAbortController = null;
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        const outputEl = document.getElementById('output');
+        const cliRow = document.getElementById('cliRow');
+        const cliInput = document.getElementById('cliInput');
+        const workspace = document.getElementById('workspace');
+
+        function scrollToBottom() {
+            workspace.scrollTop = workspace.scrollHeight;
+        }
+
+        function focusCLI() {
+            if (cliRow.classList.contains('active')) {
+                cliInput.focus();
+            }
+        }
+
+        async function typeText(targetEl, text, signal) {
+            const chars = text.split("");
+            for (let i = 0; i < chars.length; i++) {
+                if (signal.aborted) throw new Error("aborted");
+                targetEl.textContent += chars[i];
+                if (Math.random() > 0.45) SoundEngine.keyClick();
+                const delay = Math.floor(Math.random() * 20) + 6;
+                await new Promise(r => setTimeout(r, delay));
+            }
+        }
+
+        async function runBootSequence() {
+            if (activeAbortController) {
+                activeAbortController.abort();
+            }
+            activeAbortController = new AbortController();
+            const signal = activeAbortController.signal;
+
+            outputEl.innerHTML = '';
+            cliRow.classList.remove('active');
+            document.getElementById('skipBtn').style.display = 'inline-flex';
+
+            SoundEngine.degauss();
+
+            try {
+                for (let i = 0; i < INTRO_LINES.length; i++) {
+                    if (signal.aborted) return;
+                    const item = INTRO_LINES[i];
+
+                    const lineEl = document.createElement('div');
+                    lineEl.className = `line ${item.type || ''}`;
+                    
+                    const textSpan = document.createElement('span');
+                    const cursorSpan = document.createElement('span');
+                    cursorSpan.className = 'cursor';
+
+                    lineEl.appendChild(textSpan);
+                    lineEl.appendChild(cursorSpan);
+                    outputEl.appendChild(lineEl);
+                    scrollToBottom();
+
+                    await typeText(textSpan, item.text, signal);
+                    cursorSpan.remove();
+
+                    if (item.pause) {
+                        await new Promise(r => setTimeout(r, item.pause));
+                    }
+                }
+
+                enableInteractiveCLI();
+            } catch (err) {
+                if (err.message !== "aborted") console.error(err);
+            }
+        }
+
+        function enableInteractiveCLI() {
+            cliRow.classList.add('active');
+            document.getElementById('skipBtn').style.display = 'none';
+            cliInput.value = '';
+            cliInput.focus();
+            scrollToBottom();
+            SoundEngine.beep(880, 0.08);
+        }
+
+        function skipBootSequence() {
+            if (activeAbortController) {
+                activeAbortController.abort();
+            }
+            outputEl.innerHTML = '';
+            INTRO_LINES.forEach(item => {
+                const lineEl = document.createElement('div');
+                lineEl.className = `line ${item.type || ''}`;
+                lineEl.innerHTML = `<span>${item.text}</span>`;
+                outputEl.appendChild(lineEl);
+            });
+            enableInteractiveCLI();
+            SoundEngine.beep(650, 0.05);
+        }
+
+        function rebootSystem() {
+            const screen = document.getElementById('screenCasing');
+            screen.classList.remove('crt-turn-on');
+            void screen.offsetWidth;
+            screen.classList.add('crt-turn-on');
+            runBootSequence();
+        }
+
+        /* ----------------------------------------------------
+           CLI Input Handler & Smart Fuzzy Parsing
+        ---------------------------------------------------- */
+        cliInput.addEventListener('keydown', function(e) {
+            SoundEngine.keyClick();
+
+            if (e.key === 'Enter') {
+                const rawVal = this.value.trim();
+                if (!rawVal) return;
+
+                // Push to history
+                commandHistory.push(rawVal);
+                historyIndex = commandHistory.length;
+
+                // Echo command
+                const echoLine = document.createElement('div');
+                echoLine.className = 'line user-entry';
+                echoLine.innerHTML = `<span>${rawVal}</span>`;
+                outputEl.appendChild(echoLine);
+
+                // Execute
+                executeCommand(rawVal);
+                this.value = '';
+                scrollToBottom();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    this.value = commandHistory[historyIndex] || '';
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[historyIndex] || '';
+                } else {
+                    historyIndex = commandHistory.length;
+                    this.value = '';
+                }
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                autocompleteCommand(this.value);
+            }
+        });
+
+        function autocompleteCommand(inputVal) {
+            const clean = inputVal.replace(/^[\/\$\\]+/, '').trim().toLowerCase();
+            const valid = ['help', 'about', 'skills', 'projects', 'contact', 'neofetch', 'joke', 'theme', 'scanlines', 'sound', 'clear', 'reboot', 'sudo'];
+            const match = valid.find(cmd => cmd.startsWith(clean));
+            if (match) {
+                cliInput.value = match;
+                SoundEngine.beep(920, 0.03);
+            }
+        }
+
+        function executeCommand(cmdStr) {
+            // Strip leading slashes, backslashes, or dollar signs (e.g. /about -> about)
+            const sanitized = cmdStr.trim().replace(/^[\/\$\\]+/, '');
+            const parts = sanitized.toLowerCase().split(/\s+/);
+            const root = parts[0];
+            const arg = parts[1];
+
+            if (root === 'clear' || root === 'cls') {
+                outputEl.innerHTML = '';
+                SoundEngine.beep(440, 0.05);
+                return;
             }
 
-            var type = function(text, promise) {
-                var chars = text.split("").map($text);
-                promise = promise || $promise(type);
-                $append($new("br"));
-                process($append($new("q")), chars, promise);
-                return promise;
-            };
+            if (root === 'reboot') {
+                rebootSystem();
+                return;
+            }
 
-            type("Welcome friend,")
-                .then("This is suposed to be my introduction site so here we go ...")
-                .wait(1500)
-                .then("My developer career started in high school where I've created a basic Poker game with a very basic AI (always repeated the user's action) in Pascal.")
-                .then("I had so much fun creating it that I've felt like that's what I would like to do, so throughout the university's different projects I've realized that web development has the same \"fun\" factor as it includes in itself the beauty (UI) and the beast (backend which is powerful but can be troublesome) as well.")
-                .wait(1500)
-                .then("Since then I have over 5 years of experience working in web development, currently, I work as a back-end Elixir developer, building stateful APIs for a cloud contact center suite.")
-                .wait(1500)
-                .then("I call my personality type an adaptor as throughout my years of work a lot changed around, clients, teams, technologies and I've learned that I'm able to adapt really quickly and I choose to make the best out of the situation.")
-                .then("That way I have a lot of opportunities to learn new things and my wide-range experience helps to tackle issues in ease as I observe them from multiple perspectives.")
-                .then("My personality type also helps to create quickly a good relationship with teammates and clients and as I've worked and became friends with people from all around the world(Europe, Asia, Australia) I'm culturally sensitive and able to cooperate besides the timezone or the language barriers.")
-                .wait(1500)
-                .then("Things I like:")
-                .then("     -tinkering, I'm a proud owner of a raspberry pi 3b which now runs Octopi for my Ender 3 3d Printer")
-                .then("     -Arsenal, passionate about football in general, played it for a while though nowadays only on Xbox, but since I know Arsene Wenger I'm a gunner")
-                .then("     -tv shows, movies, I'm usually up to date with the trends although I also enjoy very much Chaplin's work")
-                .then("     -puns, dad jokes ")
+            if (root === 'scanlines') {
+                if (arg === 'off') {
+                    document.body.setAttribute('data-scanlines', 'off');
+                    document.getElementById('scanlineLabel').textContent = "OFF (CRISP)";
+                    document.getElementById('scanlineBtn').classList.add('active');
+                } else if (arg === 'on') {
+                    document.body.setAttribute('data-scanlines', 'on');
+                    document.getElementById('scanlineLabel').textContent = "MILD";
+                    document.getElementById('scanlineBtn').classList.remove('active');
+                } else {
+                    toggleScanlines();
+                }
+                appendOutput(`<div class="line sys">Scanlines: ${document.body.getAttribute('data-scanlines') === 'off' ? 'OFF (CRISP)' : 'MILD CRT'}</div>`);
+                return;
+            }
 
+            if (root === 'theme') {
+                if (['green', 'amber', 'cyan', 'white'].includes(arg)) {
+                    setTheme(arg);
+                    appendOutput(`<div class="line sys">Phosphor theme shifted to: ${arg.toUpperCase()}</div>`);
+                } else {
+                    appendOutput(`<div class="line highlight">Usage: theme [green | amber | cyan | white]</div>`);
+                }
+                return;
+            }
+
+            if (root === 'sound') {
+                if (arg === 'on') {
+                    if (!SoundEngine.enabled) toggleSound();
+                } else if (arg === 'off') {
+                    if (SoundEngine.enabled) toggleSound();
+                } else {
+                    toggleSound();
+                }
+                appendOutput(`<div class="line sys">Sound status: ${SoundEngine.enabled ? 'ACTIVE [🔊]' : 'MUTED [🔈]'}</div>`);
+                return;
+            }
+
+            // Typo auto-correction / suggestion
+            if (root === 'helpl') {
+                appendOutput(COMMANDS.help());
+                SoundEngine.beep(720, 0.05);
+                return;
+            }
+
+            if (COMMANDS[root]) {
+                const result = COMMANDS[root]();
+                appendOutput(result);
+                SoundEngine.beep(720, 0.05);
+            } else {
+                appendOutput(`<div class="line highlight">Command not found: "${cmdStr}". Type <span class="highlight">'help'</span> for list of commands.</div>`);
+                SoundEngine.beep(220, 0.12, 'sawtooth');
+            }
         }
+
+        function appendOutput(html) {
+            const container = document.createElement('div');
+            container.className = 'terminal-text';
+            container.innerHTML = html;
+            outputEl.appendChild(container);
+            scrollToBottom();
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            runBootSequence();
+        });
     </script>
-</head>
-
-<body style="margin: 0 auto;" onload="myFunction()">
-    <div style="display:flex; align-items:center; justify-content:center;">
-        <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="300.000000pt" height="169.000000pt" viewBox="0 0 300.000000 169.000000" preserveAspectRatio="xMidYMid meet">
-            <g transform="translate(0.000000,169.000000) scale(0.100000,-0.100000)"
-            fill="#000000" stroke="none">
-            <path d="M1458 1570 c-169 -31 -292 -94 -409 -210 -146 -144 -208 -286 -216
-            -495 -4 -100 -2 -135 16 -210 64 -265 253 -461 518 -537 101 -29 294 -32 393
-            -5 66 17 227 92 268 124 l22 18 -45 68 -46 67 -37 -29 c-44 -36 -147 -83 -217
-            -100 -69 -17 -218 -15 -289 4 -140 37 -287 147 -353 265 -103 181 -107 386
-            -13 576 71 145 218 260 381 299 75 17 216 20 291 4 152 -31 307 -151 370 -286
-            28 -59 33 -81 36 -169 5 -129 -12 -193 -69 -258 -46 -52 -77 -71 -132 -81
-            l-37 -7 0 169 c0 94 -3 218 -7 276 l-6 107 -92 0 -92 0 -66 -157 -66 -158 -28
-            65 c-16 36 -47 107 -69 158 l-39 92 -95 -2 c-83 -3 -95 -5 -94 -20 0 -10 1
-            -139 2 -288 l2 -270 70 0 70 0 2 206 3 205 65 -151 65 -151 48 3 49 3 61 149
-            c54 131 63 146 68 120 4 -16 7 -136 8 -266 l1 -238 65 0 c182 0 355 93 424
-            228 52 103 65 264 31 396 -29 116 -73 189 -170 287 -136 137 -276 195 -490
-            204 -58 2 -126 0 -152 -5z"/>
-            </g>
-        </svg>
-
-    </div>
-    <output></output>
-    <button onclick="myFunction()">
-            Reboot AI...
-    </button>
 </body>
-
 </html>
